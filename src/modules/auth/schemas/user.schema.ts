@@ -30,22 +30,16 @@ export class User {
   @Prop()
   refreshTokenExpiry?: Date;
 
-  /*  /!** (선택) 비밀번호 암호화 처리 *!/
-  async setPassword(plain: string) {
-    const salt = await bcrypt.genSalt();
-    this.password = await bcrypt.hash(plain, salt);
-  }*/
-
   async validatePassword(plain: string): Promise<boolean> {
     return bcrypt.compare(plain, this.password);
   }
 
   isRefreshTokenValid(token: string): boolean {
-    return (
-      this.refreshToken === token && 
-      this.refreshTokenExpiry && 
-      this.refreshTokenExpiry > new Date()
-    );
+    if (!this.refreshToken || !this.refreshTokenExpiry) {
+      return false;
+    }
+
+    return this.refreshToken === token && this.refreshTokenExpiry > new Date();
   }
 }
 
