@@ -1,3 +1,35 @@
+# 2025 Nexon 웹 백엔드 과제 전형
+
+## MVP 기능 구현
+- JWT Token을 활용한 인증 인가 시스템
+- JWT Token의 인증 인가 및 Role 검사 시스템 구현
+- 이벤트 도메인 관련 CRUD 로직 구성
+- MSA 아키텍처 도입 후 각 서버 연결
+
+## 1. Auth Server 구현 내용
+- User Schema 정의
+- 이에 따른 회원가입, 로그인, 역할 관리 구현
+- JWT 토큰 생성 및 관리 방법 지정
+
+### 1-1. User Schema 설계
+```mongodb-json
+user : {
+    _id : Object(id),
+    username : string,
+    password : string(hashed)
+    role : String
+}
+```
+
+### 1-2. API 목록
+- 회원가입 (/auth/signup)
+- 로그인 (/auth/signin)
+- 유저 정보 조회(/auth/users/${userId})
+- 권한 수정 (/auth/users/${userId}/roles)
+- 토큰을 이용한 정보 조회 (/auth/users/me)
+
+
+
 <p align="center">
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
