@@ -4,5 +4,35 @@
   "sourceRoot": "src",
   "compilerOptions": {
     "deleteOutDir": true
+  },
+  "monorepo": true,
+  "projects": {
+    "gateway": {
+      "type": "application",
+      "root": "src/apps/gateway/src",
+      "entryFile": "main",
+      "sourceRoot": "src/apps/gateway/src",
+      "compilerOptions": {
+        "tsConfigPath": "tsconfig.json"
+      }
+    },
+    "auth": {
+      "type": "application",
+      "root": "src/apps/auth/src",
+      "entryFile": "main",
+      "sourceRoot": "src/apps/auth/src",
+      "compilerOptions": {
+        "tsConfigPath": "tsconfig.json"
+      }
+    },
+    "event": {
+      "type": "application",
+      "root": "src/apps/event/src",
+      "entryFile": "main",
+      "sourceRoot": "src/apps/event/src",
+      "compilerOptions": {
+        "tsConfigPath": "tsconfig.json"
+      }
+    }
   }
 }
