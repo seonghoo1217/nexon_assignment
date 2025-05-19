@@ -1,130 +1,225 @@
 # 2025 Nexon 웹 백엔드 과제 전형
 
-## MVP 기능 구현
-- JWT Token을 활용한 인증 인가 시스템
-- JWT Token의 인증 인가 및 Role 검사 시스템 구현
-- 이벤트 도메인 관련 CRUD 로직 구성
-- MSA 아키텍처 도입 후 각 서버 연결
+## 프로젝트 개요
+해당 프로젝트는 NestJS, MongoDB, 그리고 마이크로서비스 아키텍처(MSA)를 활용하여 이벤트 보상 시스템을 구현한 백엔드 애플리케이션입니다. 
+사용자는 이벤트에 참여하고 보상을 요청할 수 있으며, 관리자는 이벤트를 생성하고 보상을 관리할 수 있습니다.
 
-## 1. Auth Server 구현 내용
-- User Schema 정의
-- 이에 따른 회원가입, 로그인, 역할 관리 구현
-- JWT 토큰 생성 및 관리 방법 지정
+## 주요 기능 구현
+- **JWT 기반 인증 및 인가 시스템**: 안전한 사용자 인증과 역할 기반 접근 제어
+- **역할 기반 권한 관리**: 사용자, 운영자, 감사자, 관리자 역할에 따른 기능 접근 제어
+- **이벤트 및 보상 관리**: 이벤트 생성, 보상 정의, 보상 요청 처리
+- **마이크로서비스 아키텍처**: 세 개의 독립적인 서비스(Gateway, Auth, Event)로 구성된 확장 가능한 시스템
 
-### 1-1. User Schema 설계
-```mongodb-json
-user : {
-    _id : Object(id),
-    username : string,
-    password : string(hashed)
-    role : String
+## 아키텍처 개요
+이 프로젝트는 마이크로서비스 아키텍처를 기반으로 세 개의 주요 서비스로 구성되어 있습니다:
+
+1. **Gateway Server**: 모든 API 요청의 진입점으로, 인증 및 권한 검사를 수행하고 요청을 적절한 마이크로서비스로 라우팅합니다.
+2. **Auth Server**: 사용자 관리, 인증, 권한 관리, JWT 토큰 발급을 담당합니다.
+3. **Event Server**: 이벤트 생성, 보상 정의, 보상 요청 처리, 보상 상태 관리를 담당합니다.
+
+각 서비스는 독립적으로 실행되며, TCP 기반의 마이크로서비스 통신을 통해 상호작용합니다.
+
+## 프로젝트 구조
+```
+repo-root/
+├── src/
+│   ├── apps/
+│   │   ├── auth/                   ← Auth 마이크로서비스
+│   │   │   └── src/
+│   │   │       ├── main.ts         # NestFactory.createMicroservice
+│   │   │       ├── app.module.ts
+│   │   │       └── module/
+│   │   │           ├── controllers/
+│   │   │           │   └── rpc/    # Gateway → RPC 통신용
+│   │   │           ├── services/   # 비즈니스 로직
+│   │   │           └── schemas/    # Mongoose 스키마
+│   │   │
+│   │   ├── event/                  ← Event 마이크로서비스
+│   │   │   └── src/
+│   │   │       ├── main.ts         # NestFactory.createMicroservice
+│   │   │       ├── app.module.ts
+│   │   │       └── modules/
+│   │   │           └── event/
+│   │   │               ├── controllers/ # RPC 핸들러
+│   │   │               └── schemas/     # Mongoose 스키마
+│   │   │
+│   │   └── gateway/                ← HTTP Gateway 서버
+│   │       └── src/
+│   │           ├── main.ts         # NestFactory.create()
+│   │           ├── app.module.ts
+│   │           └── modules/
+│   │               ├── auth/       # HTTP → RPC 중개 모듈
+│   │               │   ├── controllers/
+│   │               │   │   └── http/ # 클라이언트용 API 컨트롤러
+│   │               │   ├── decorators/ # @Roles() 등
+│   │               │   ├── guards/     # JwtAuthGuard, RolesGuard
+│   │               │   └── strategies/ # JwtStrategy 등
+│   │               │
+│   │               ├── gateway/    # 공통 라우팅 · 미들웨어
+│   │               │   └── controllers/
+│   │               │       └── gateway.controller.ts
+│   │               │
+│   │               └── health/     # 헬스체크 전용 모듈
+│   │                   └── controllers/
+│   │                       └── health.controller.ts
+│   │
+│   └── common/                     ← 공통 모듈
+│       ├── exceptions/             # 커스텀 예외 클래스
+│       └── filters/                # 예외 필터
+│
+├── nest-cli.json                   # Monorepo 설정
+├── tsconfig.json
+├── package.json
+└── docker-compose.yml              # Docker 배포 설정
+```
+
+## 기술 스택
+- **백엔드 프레임워크**: NestJS
+- **데이터베이스**: MongoDB
+- **인증**: JWT (JSON Web Tokens)
+- **통신**: TCP 기반 마이크로서비스
+- **배포**: Docker, Docker Compose
+
+## 환경 변수 설정
+`.env` 파일을 루트 디렉토리에 생성하고 다음 변수들을 설정하세요:
+
+```
+# MongoDB
+MONGO_URI=
+
+# JWT
+JWT_SECRET=
+
+# Service Ports
+PORT=8000
+AUTH_SERVICE_PORT=8001
+AUTH_SERVICE_HOST=auth-service
+EVENT_SERVICE_PORT=8002
+EVENT_SERVICE_HOST=event-service
+```
+
+## Docker 환경구성
+현재 구조는 GateWay Server(port:8000)에서 모든 요청을 처리받아 이를 내부 TCP를 통해 각각 Auth와 Evnet 서버로 전달해줍니다.
+그렇기에 현재 Docker Compose 파일을 이용하여 8000,8001,8002 각각의 포트번호를 local 환경에 띄운 후  8000 포트로 Client와 통신합니다.
+
+### 실행 방법
+```bash
+# 빌드 및 실행
+docker-compose up --build
+
+# 백그라운드에서 실행
+docker-compose up -d
+```
+Docker Compose를 사용하여 모든 서비스를 컨테이너화하여 실행할 수 있습니다:
+
+## 서비스 상세 설명
+
+### 1. Auth Server
+Auth Server는 사용자 관리, 인증, 권한 관리를 담당하는 마이크로서비스입니다.
+
+#### 1-1. User Schema 설계
+```json
+{
+    "_id": "ObjectId",
+    "username": "string",
+    "password": "string(hashed)",
+    "roles": ["String"],
+    "refreshToken": "string",
+    "refreshTokenExpiry": "Date"
 }
 ```
 
-### 1-2. API 목록
-- 회원가입 (/auth/signup)
-- 로그인 (/auth/signin)
-- 유저 정보 조회(/auth/users/${userId})
-- 권한 수정 (/auth/users/${userId}/roles)
-- 토큰을 이용한 정보 조회 (/auth/users/me)
+#### 1-2. API 목록
+- **회원가입** (`/auth/signup`): 새로운 사용자 등록
+- **로그인** (`/auth/signin`): 사용자 인증 및 JWT 토큰 발급
+- **유저 정보 조회** (`/auth/users/{userId}`): 특정 사용자 정보 조회 (관리자/감사자 전용)
+- **권한 수정** (`/auth/users/{userId}/roles`): 사용자 역할 변경 (관리자 전용)
+- **내 정보 조회** (`/auth/me`): 현재 인증된 사용자 정보 조회
+- **토큰 갱신** (`/auth/refresh`): 리프레시 토큰을 사용한 액세스 토큰 갱신
+- **로그아웃** (`/auth/logout`): 사용자 로그아웃 및 리프레시 토큰 무효화
 
+### 2. Event Server
+Event Server는 이벤트 생성, 보상 정의, 보상 요청 처리를 담당하는 마이크로서비스입니다.
 
+#### 2-1. Schema 설계
 
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
-
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
-```bash
-$ npm install
+##### Event Schema
+```json
+{
+    "_id": "ObjectId",
+    "name": "string",
+    "description": "string",
+    "conditions": "string",
+    "startDate": "Date",
+    "endDate": "Date",
+    "status": "string (active/inactive)"
+}
 ```
 
-## Compile and run the project
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+##### Reward Schema
+```json
+{
+    "_id": "ObjectId",
+    "name": "string",
+    "description": "string",
+    "type": "string (point/item/coupon)",
+    "quantity": "number",
+    "eventId": "ObjectId"
+}
 ```
 
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+##### RewardRequest Schema
+```json
+{
+    "_id": "ObjectId",
+    "userId": "string",
+    "rewardId": "ObjectId",
+    "status": "string (pending/approved/rejected/completed)",
+    "approvedBy": "string",
+    "approvedAt": "Date",
+    "rejectionReason": "string"
+}
 ```
 
-## Deployment
+#### 2-2. API 목록
+- **이벤트 생성** (`/events/create`): 새로운 이벤트 생성 (운영자/관리자 전용)
+- **보상 정의** (`/events/rewards/define`): 이벤트에 대한 보상 정의 (운영자/관리자 전용)
+- **보상 요청** (`/events/rewards/request`): 사용자가 이벤트 보상 요청
+- **보상 내역 조회** (`/events/rewards/history`): 보상 요청 내역 조회 (감사자/관리자 전용)
+- **특정 보상 상세 조회** (`/events/rewards/{id}`): 특정 보상 요청 상세 정보 조회 (감사자/관리자 전용)
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+### 3. Gateway Server
+Gateway Server는 모든 API 요청의 진입점으로, 인증 및 권한 검사를 수행하고 요청을 적절한 마이크로서비스로 라우팅합니다.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+#### 3-1. 주요 기능
+- JWT 토큰 검증 (`JwtAuthGuard`)
+- 역할 기반 접근 제어 (`RolesGuard`)
+- 요청 라우팅 및 마이크로서비스 통신
+- 헬스 체크 API 제공
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+#### 3-2. 사용자 역할(Role)
+- **USER**: 보상 요청 가능
+- **OPERATOR**: 이벤트/보상 등록 가능
+- **AUDITOR**: 보상 이력 조회만 가능
+- **ADMIN**: 모든 기능 접근 가능
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## 에러 처리
+프로젝트는 중앙 집중식 에러 처리 메커니즘을 구현하여 일관된 에러 응답을 제공합니다:
 
-## Resources
+- **CustomException**: 모든 커스텀 예외의 기본 클래스
+- **HttpExceptionFilter**: HTTP 예외를 처리하는 글로벌 필터
+- **RpcToHttpExceptionFilter**: 마이크로서비스 RPC 예외를 HTTP 예외로 변환하는 필터
 
-Check out a few resources that may come in handy when working with NestJS:
+## 헬스 체크
+각 서비스는 `/health` 엔드포인트를 제공하여 서비스 상태를 모니터링할 수 있습니다:
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+- Gateway Server: `GET /health`
+- Auth Server: 내부 헬스 체크 (Gateway를 통해 접근)
+- Event Server: 내부 헬스 체크 (Gateway를 통해 접근)
 
-## Support
+## 보안 고려사항
+- 비밀번호는 bcrypt를 사용하여 해싱됩니다.
+- JWT 토큰은 짧은 만료 시간을 가지며, 리프레시 토큰을 통해 갱신할 수 있습니다.
+- 모든 API 엔드포인트는 적절한 권한 검사를 통해 보호됩니다.
+- 환경 변수를 통해 민감한 정보를 관리합니다.
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
