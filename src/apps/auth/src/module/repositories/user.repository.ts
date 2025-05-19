@@ -19,11 +19,14 @@ export class UserRepository {
       .exec();
   }
 
-  async findByUsername(username: string): Promise<UserDocument | null> {
-    return this.userModel.findOne({ username }).exec();
+  async findByUsername(username: string) {
+    return this.userModel
+      .findOne({ username })
+      .orFail(() => new UserNotFoundException('회원 정보가 존재하지 않습니다.'))
+      .exec();
   }
 
-  async exists(username: string): Promise<boolean> {
+  async exists(username: string) {
     const existingUser = await this.userModel.exists({ username });
     return !!existingUser;
   }
