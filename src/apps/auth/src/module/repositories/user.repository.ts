@@ -6,7 +6,7 @@ import { Role } from '../schemas/role.enum';
 import {
   UserNotFoundException,
   UserAlreadyExistsException,
-} from '../../../../common/exceptions/custom.exception';
+} from '../../../../../common/exceptions/custom.exception';
 
 @Injectable()
 export class UserRepository {

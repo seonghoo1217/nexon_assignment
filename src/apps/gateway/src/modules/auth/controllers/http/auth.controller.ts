@@ -16,7 +16,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { RolesGuard } from '../../guards/roles.guard';
 import { Roles } from '../../decorators/roles.decorator';
-import { Role } from '../../../../../../auth/src/schemas/role.enum';
+import { Role } from '../../../../../../auth/src/module/schemas/role.enum';
 import { SignUpDto } from '../dto/req/register.req.dto';
 import { SignInDto } from '../dto/req/login.req.dto';
 import { ModifyRolesDto } from '../dto/req/modify.roles.req.dto';

@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
 import { Role } from '../schemas/role.enum';
-import { InvalidTokenException } from '../../../../common/exceptions/custom.exception';
+import { InvalidTokenException } from '../../../../../common/exceptions/custom.exception';
 import { TokenPayload } from './token.payload.dto';
 
 @Injectable()

@@ -5,7 +5,7 @@ import { UserRepository } from '../repositories/user.repository';
 import {
   InvalidCredentialsException,
   InvalidTokenException,
-} from '../../../../common/exceptions/custom.exception';
+} from '../../../../../common/exceptions/custom.exception';
 import { UserDocument } from '../schemas/user.schema';
 import { TokenPayload } from './token.payload.dto';
 

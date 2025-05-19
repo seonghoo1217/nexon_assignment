@@ -1,4 +1,4 @@
-import { Role } from '../../../../../../../auth/src/schemas/role.enum';
+import { Role } from '../../../../../../../auth/src/module/schemas/role.enum';
 
 export class SignUpDto {
   username: string;
