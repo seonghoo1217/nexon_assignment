@@ -85,7 +85,7 @@ repo-root/
 현재 구조는 GateWay Server(port:8000)에서 모든 요청을 처리받아 이를 내부 TCP를 통해 각각 Auth와 Evnet 서버로 전달해줍니다.
 그렇기에 현재 Docker Compose 파일을 이용하여 8000,8001,8002 각각의 포트번호를 local 환경에 띄운 후  8000 포트로 Client와 통신합니다.
 
-## 실행 방법
+# `실행 방법`
 ### 환경 변수 설정
 루트 디렉토리 밑에 `.env` 파일을 생성하고 아래 요소를 붙여넣으시면 됩니다.
 
@@ -109,6 +109,9 @@ docker-compose up --build
 # 백그라운드에서 실행
 docker-compose up -d
 ```
+### 유의사항
+만약 docker compose에서 dist 경로 관련 문제가 발생한다면 `auth`,`event`,`gateway`
+서버 모두다 동일하게 `dist/apps/${server_name}/src/main.js` 구조를 가지기에 참고해주세요
 
 ## 서비스 상세 설명
 
@@ -220,6 +223,9 @@ Gateway Server는 모든 API 요청의 진입점으로, 인증 및 권한 검사
 - JWT 토큰은 짧은 만료 시간을 가지며, 리프레시 토큰을 통해 갱신할 수 있습니다.
 - 모든 API 엔드포인트는 적절한 권한 검사를 통해 보호됩니다.
 - 환경 변수를 통해 민감한 정보를 관리합니다.
+
+## API Document
+- [API LINK](https://documenter.getpostman.com/view/15048958/2sB2qXmio8)
 
 ## Trouble Shooting
 MSA 구조를 만들 시 각각의 서버에대한 Host를 `localhost`가 아닌 `0.0.0.0`으로 설정했습니다.
