@@ -9,7 +9,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
     ports:
       - "8001:8001"
-    command: node dist/apps/auth/src/main.js
+    command: sh -c "npm run build && node dist/apps/auth/src/main.js"
 
   event-service:
     build:
@@ -20,7 +20,7 @@ services:
       - MONGO_URI=${MONGO_URI}
     ports:
       - "8002:8002"
-    command: node dist/apps/event/src/main.js
+    command: sh -c "npm run build && node dist/apps/event/src/main.js"
 
   gateway-service:
     build:
@@ -37,7 +37,7 @@ services:
     depends_on:
       - auth-service
       - event-service
-    command: node dist/apps/gateway/src/main.js
+    command: sh -c "npm run build && node dist/apps/gateway/src/main.js"
 
 networks:
   default:
