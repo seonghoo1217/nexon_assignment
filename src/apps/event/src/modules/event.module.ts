@@ -13,6 +13,7 @@ import { RewardRequestService } from './services/reward-request.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { RewardRpcController } from './controllers/reward.rpc.controller';
+import { ConditionService } from './services/event-reward-condition.service';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { RewardRpcController } from './controllers/reward.rpc.controller';
     EventService,
     RewardService,
     RewardRequestService,
+    ConditionService,
   ],
 })
 export class EventModule {}
